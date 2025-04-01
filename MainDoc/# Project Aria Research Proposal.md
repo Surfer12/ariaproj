@@ -14,7 +14,7 @@ Our research aims to develop a novel recursive cognitive architecture that integ
 techniques
 
 
-[[View Cognitive System Integration Diagram](https://claude.site/artifacts/f67a5c2c-ea9d-4ac0-a843-c4b83f781030)
+[View Cognitive System Integration Diagram](https://claude.site/artifacts/f67a5c2c-ea9d-4ac0-a843-c4b83f781030)
 
 
 Project Aria uniquely provides:
