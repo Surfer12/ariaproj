@@ -16,7 +16,7 @@ const RecursiveResponseFramework = () => {
   const [sparseEncodingRatio, setSparseEncodingRatio] = useState(0.15);
   const [focusPoint, setFocusPoint] = useState({ x: 0.5, y: 0.5 });
   const [recognizedPatterns, setRecognizedPatterns] = useState([]);
-  const [knowledgeGraph, setKnowledgeGraph] = useState({ nodes: [], edges: [] });
+  const [displayGraphData, setDisplayGraphData] = useState({ nodes: [], edges: [] });
   const [collaborativeMode, setCollaborativeMode] = useState(false);
   const [collaborators, setCollaborators] = useState([]);
   const [sharedInsights, setSharedInsights] = useState([]);
@@ -534,6 +534,66 @@ const RecursiveResponseFramework = () => {
     }
   }
   
+  // NEW: KnowledgeGraphRegistry class definition
+  class KnowledgeGraphRegistry {
+    constructor() {
+      this.instances = new Map();
+      // console.log("KnowledgeGraphRegistry initialized");
+    }
+
+    /**
+     * Retrieves an existing instance of KnowledgeGraphManager or creates a new one.
+     * @param {string} id - The unique identifier for the KnowledgeGraphManager instance.
+     * @param {object} [options={}] - Options to pass to the KnowledgeGraphManager constructor if creating a new instance.
+     * @returns {KnowledgeGraphManager} The KGM instance.
+     */
+    getOrCreateInstance(id, options = {}) {
+      if (!this.instances.has(id)) {
+        // console.log(`Registry: Creating new KnowledgeGraphManager instance with id "${id}"`);
+        // KnowledgeGraphManager class must be in scope here.
+        const newInstance = new KnowledgeGraphManager({ ...options, id });
+        this.instances.set(id, newInstance);
+      }
+      return this.instances.get(id);
+    }
+
+    /**
+     * Retrieves an existing instance of KnowledgeGraphManager.
+     * @param {string} id - The unique identifier for the instance.
+     * @returns {KnowledgeGraphManager | undefined} The instance or undefined if not found.
+     */
+    getInstance(id) {
+      if (!this.instances.has(id)) {
+        // console.warn(`Registry: No KnowledgeGraphManager instance found with id "${id}"`);
+      }
+      return this.instances.get(id);
+    }
+
+    /**
+     * Destroys a managed KnowledgeGraphManager instance.
+     * @param {string} id - The unique identifier for the instance to destroy.
+     * @returns {boolean} True if an instance was destroyed, false otherwise.
+     */
+    destroyInstance(id) {
+      if (this.instances.has(id)) {
+        // console.log(`Registry: Destroying KnowledgeGraphManager instance with id "${id}"`);
+        this.instances.delete(id);
+        return true;
+      }
+      // console.warn(`Registry: Attempted to destroy non-existent instance with id "${id}"`);
+      return false;
+    }
+
+    /**
+     * Lists the IDs of all currently managed instances.
+     * @returns {string[]} An array of instance IDs.
+     */
+    listInstanceIds() {
+      return Array.from(this.instances.keys());
+    }
+  }
+  // END NEW: KnowledgeGraphRegistry class definition
+  
   // Collaborative Framework Components
   class CollaborativeFramework {
     constructor() {
@@ -865,7 +925,17 @@ const RecursiveResponseFramework = () => {
   
   // Initialize systems
   const [patternRecognizer] = useState(() => new IsomorphicPatternRecognizer());
-  const [knowledgeGraph] = useState(() => new KnowledgeGraphManager());
+  // MODIFIED: Use useMemo and the registry to instantiate knowledgeGraphManager
+  const registry = useMemo(() => {
+    console.log("🔧 KnowledgeGraphRegistry: Creating new registry instance");
+    return new KnowledgeGraphRegistry();
+  }, []);
+  const knowledgeGraphManager = useMemo(() => {
+    console.log("📊 KnowledgeGraphRegistry: Getting or creating 'mainAriaGraph' instance");
+    const instance = registry.getOrCreateInstance('mainAriaGraph');
+    console.log("📊 KnowledgeGraphRegistry: Current instances:", registry.listInstanceIds());
+    return instance;
+  }, [registry]);
   const [collaborationSystem] = useState(() => new CollaborativeFramework());
   const [bifurcationSystem] = useState(() => new BifurcationAnalysisSystem());
   const [selfModifyingSystem] = useState(() => new SelfModifyingArchitecture());
@@ -1001,13 +1071,13 @@ const RecursiveResponseFramework = () => {
           
           if (patternsFound) {
             // New patterns detected, update knowledge graph
-            const graphData = knowledgeGraph.buildFromCognitiveFramework(
+            const newGraphDataFromManager = knowledgeGraphManager.buildFromCognitiveFramework(
               enhancedQuestions,
               activeLayer,
               patternRecognizer
             );
             
-            setKnowledgeGraph(graphData);
+            setDisplayGraphData(newGraphDataFromManager);
             
             // Log insight
             setInsightLog(prev => [
@@ -2630,6 +2700,18 @@ const RecursiveResponseFramework = () => {
           <RefreshCw size={14} /> Meta-Cognitive System Analysis
         </h3>
         <p className="text-sm text-gray-600 italic">{narrativeGeneration}</p>
+        
+        {/* NEW: Registry Debug Information */}
+        <div className="mt-3 p-2 bg-gray-50 rounded border">
+          <h4 className="text-xs font-medium text-gray-600 mb-1">🔧 Registry Debug Info</h4>
+          <div className="text-xs text-gray-500">
+            <div>Active KnowledgeGraph Instances: {registry.listInstanceIds().join(', ') || 'None'}</div>
+            <div>Current Instance ID: mainAriaGraph</div>
+            <div>Instance Type: {knowledgeGraphManager.constructor.name}</div>
+            <div>Graph Nodes: {knowledgeGraphManager.getGraph().nodes.length}</div>
+            <div>Graph Edges: {knowledgeGraphManager.getGraph().edges.length}</div>
+          </div>
+        </div>
         
         <div className="mt-3 grid grid-cols-3 gap-3">
           {Object.keys(systemMetrics).filter(k => k !== 'lastEvaluationTimestamp').map(metric => (
