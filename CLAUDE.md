@@ -8,13 +8,17 @@ This repository contains the Project Aria Research Proposal for developing a Rec
 
 **Key Innovation:** Cognitive Sparse Encoded Architecture (CSEA) with dynamic boundary management.
 
-**Project Status:** Research
+**Project Status:** Research (Note: No actual implementation exists yet; this is purely proposal-based).
 
 ## Repository Structure
 
 - **MainDoc/**: Research proposal documents and drafts
-- **aria-init/**: Architectural specifications and diagrams
-- **claudeNotes/**: Supplementary development notes
+  - `# Project Aria Research Proposal- Recursive Cognitive Integration Framework draft 2.md`: 354-line comprehensive proposal.
+  - `claude-draft2-additions.md`: 336-line implementation guidelines with Java interface examples.
+- **aria-init/**: Architectural specifications, diagrams, and cognitive models
+  - Mermaid diagrams visualizing cognitive model structure and state transitions.
+  - HTML files with interactive cognitive integration matrices and component visualizations.
+- **claudeNotes/**: Supplementary documentation and development notes.
 
 ## Build and Development Commands
 
