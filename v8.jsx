@@ -594,6 +594,450 @@ const RecursiveResponseFramework = () => {
   }
   // END NEW: KnowledgeGraphRegistry class definition
   
+  // NEW: Generic ComponentRegistry class for managing multiple component types
+  class ComponentRegistry {
+    constructor() {
+      this.registries = new Map();
+      // console.log("ComponentRegistry initialized");
+    }
+
+    /**
+     * Get or create a type-specific registry
+     * @param {string} componentType - The type of component (e.g., 'KnowledgeGraphManager', 'IsomorphicPatternRecognizer')
+     * @returns {Map} The registry for this component type
+     */
+    getTypeRegistry(componentType) {
+      if (!this.registries.has(componentType)) {
+        this.registries.set(componentType, new Map());
+      }
+      return this.registries.get(componentType);
+    }
+
+    /**
+     * Get or create an instance of a specific component type
+     * @param {string} componentType - The type of component
+     * @param {string} id - The unique identifier for the instance
+     * @param {Function} constructorFn - The constructor function for the component
+     * @param {object} [options={}] - Options to pass to the constructor
+     * @returns {object} The component instance
+     */
+    getOrCreateInstance(componentType, id, constructorFn, options = {}) {
+      const typeRegistry = this.getTypeRegistry(componentType);
+      
+      if (!typeRegistry.has(id)) {
+        // console.log(`ComponentRegistry: Creating new ${componentType} instance with id "${id}"`);
+        const newInstance = new constructorFn({ ...options, id });
+        typeRegistry.set(id, newInstance);
+      }
+      return typeRegistry.get(id);
+    }
+
+    /**
+     * Get an existing instance
+     * @param {string} componentType - The type of component
+     * @param {string} id - The unique identifier for the instance
+     * @returns {object | undefined} The instance or undefined if not found
+     */
+    getInstance(componentType, id) {
+      const typeRegistry = this.getTypeRegistry(componentType);
+      return typeRegistry.get(id);
+    }
+
+    /**
+     * Destroy an instance
+     * @param {string} componentType - The type of component
+     * @param {string} id - The unique identifier for the instance
+     * @returns {boolean} True if an instance was destroyed, false otherwise
+     */
+    destroyInstance(componentType, id) {
+      const typeRegistry = this.getTypeRegistry(componentType);
+      if (typeRegistry.has(id)) {
+        // console.log(`ComponentRegistry: Destroying ${componentType} instance with id "${id}"`);
+        typeRegistry.delete(id);
+        return true;
+      }
+      return false;
+    }
+
+    /**
+     * List all instance IDs for a component type
+     * @param {string} componentType - The type of component
+     * @returns {string[]} An array of instance IDs
+     */
+    listInstanceIds(componentType) {
+      const typeRegistry = this.getTypeRegistry(componentType);
+      return Array.from(typeRegistry.keys());
+    }
+
+    /**
+     * Get summary of all managed components
+     * @returns {object} Summary object with counts by type
+     */
+    getSummary() {
+      const summary = {};
+      for (const [componentType, registry] of this.registries) {
+        summary[componentType] = registry.size;
+      }
+      return summary;
+    }
+  }
+  // END NEW: Generic ComponentRegistry class definition
+  
+  // NEW: MetaLogger class for tracking component lifecycle and system events
+  class MetaLogger {
+    constructor() {
+      this.events = [];
+      this.maxEvents = 1000; // Limit to prevent memory issues
+      this.sessionId = `session_${Date.now()}`;
+      // console.log(`MetaLogger initialized for session: ${this.sessionId}`);
+    }
+
+    /**
+     * Log an event with timestamp and context
+     * @param {string} eventType - Type of event (e.g., 'component_created', 'interaction', 'state_change')
+     * @param {string} componentType - Type of component involved (optional)
+     * @param {string} componentId - ID of component involved (optional)
+     * @param {object} details - Additional event details
+     * @param {object} context - Current system context (optional)
+     */
+    logEvent(eventType, componentType = null, componentId = null, details = {}, context = {}) {
+      const event = {
+        id: `event_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
+        timestamp: Date.now(),
+        sessionId: this.sessionId,
+        eventType,
+        componentType,
+        componentId,
+        details,
+        context: {
+          ...context,
+          userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : 'unknown',
+          timestamp: new Date().toISOString()
+        }
+      };
+
+      this.events.push(event);
+
+      // Maintain size limit
+      if (this.events.length > this.maxEvents) {
+        this.events = this.events.slice(-this.maxEvents);
+      }
+
+      // console.log(`MetaLogger: ${eventType}`, event);
+      return event.id;
+    }
+
+    /**
+     * Get events filtered by criteria
+     * @param {object} criteria - Filter criteria
+     * @returns {Array} Filtered events
+     */
+    getEvents(criteria = {}) {
+      let filtered = [...this.events];
+
+      if (criteria.eventType) {
+        filtered = filtered.filter(e => e.eventType === criteria.eventType);
+      }
+
+      if (criteria.componentType) {
+        filtered = filtered.filter(e => e.componentType === criteria.componentType);
+      }
+
+      if (criteria.componentId) {
+        filtered = filtered.filter(e => e.componentId === criteria.componentId);
+      }
+
+      if (criteria.since) {
+        filtered = filtered.filter(e => e.timestamp >= criteria.since);
+      }
+
+      if (criteria.limit) {
+        filtered = filtered.slice(-criteria.limit);
+      }
+
+      return filtered.sort((a, b) => b.timestamp - a.timestamp);
+    }
+
+    /**
+     * Get timeline for a specific component
+     * @param {string} componentType - Type of component
+     * @param {string} componentId - ID of component
+     * @returns {Array} Timeline of events for the component
+     */
+    getComponentTimeline(componentType, componentId) {
+      return this.getEvents({ componentType, componentId });
+    }
+
+    /**
+     * Get system activity summary
+     * @param {number} timeWindow - Time window in milliseconds (default: last hour)
+     * @returns {object} Activity summary
+     */
+    getActivitySummary(timeWindow = 3600000) {
+      const since = Date.now() - timeWindow;
+      const recentEvents = this.getEvents({ since });
+
+      const summary = {
+        totalEvents: recentEvents.length,
+        eventTypes: {},
+        componentTypes: {},
+        timeWindow,
+        sessionId: this.sessionId
+      };
+
+      recentEvents.forEach(event => {
+        // Count by event type
+        summary.eventTypes[event.eventType] = (summary.eventTypes[event.eventType] || 0) + 1;
+
+        // Count by component type
+        if (event.componentType) {
+          summary.componentTypes[event.componentType] = (summary.componentTypes[event.componentType] || 0) + 1;
+        }
+      });
+
+      return summary;
+    }
+
+    /**
+     * Generate insights from logged events
+     * @returns {Array} Array of insights
+     */
+    generateInsights() {
+      const insights = [];
+      const recentEvents = this.getEvents({ limit: 100 });
+
+      // Pattern: Frequent component creation/destruction
+      const creationEvents = recentEvents.filter(e => e.eventType === 'component_created');
+      const destructionEvents = recentEvents.filter(e => e.eventType === 'component_destroyed');
+
+      if (creationEvents.length > destructionEvents.length * 2) {
+        insights.push({
+          type: 'resource_leak_warning',
+          message: 'Components are being created more frequently than destroyed. Potential memory leak.',
+          severity: 'warning',
+          data: { creations: creationEvents.length, destructions: destructionEvents.length }
+        });
+      }
+
+      // Pattern: High interaction frequency
+      const interactionEvents = recentEvents.filter(e => e.eventType === 'interaction');
+      if (interactionEvents.length > 50) {
+        insights.push({
+          type: 'high_activity',
+          message: 'High interaction frequency detected. System is being actively used.',
+          severity: 'info',
+          data: { interactions: interactionEvents.length }
+        });
+      }
+
+      // Pattern: Error clustering
+      const errorEvents = recentEvents.filter(e => e.eventType === 'error');
+      if (errorEvents.length > 5) {
+        insights.push({
+          type: 'error_cluster',
+          message: 'Multiple errors detected in recent activity.',
+          severity: 'error',
+          data: { errors: errorEvents.length }
+        });
+      }
+
+      return insights;
+    }
+
+    /**
+     * Clear old events
+     * @param {number} olderThan - Clear events older than this timestamp
+     */
+    clearOldEvents(olderThan = Date.now() - 86400000) { // Default: 24 hours
+      const initialLength = this.events.length;
+      this.events = this.events.filter(e => e.timestamp >= olderThan);
+      const cleared = initialLength - this.events.length;
+      
+      if (cleared > 0) {
+        this.logEvent('maintenance', 'MetaLogger', 'system', { 
+          action: 'clear_old_events', 
+          eventsCleared: cleared 
+        });
+      }
+      
+      return cleared;
+    }
+  }
+  // END NEW: MetaLogger class definition
+
+  // MODIFIED: Enhanced ComponentRegistry with MetaLogger integration
+  class ComponentRegistry {
+    constructor(metaLogger = null) {
+      this.registries = new Map();
+      this.metaLogger = metaLogger;
+      // console.log("ComponentRegistry initialized");
+      
+      if (this.metaLogger) {
+        this.metaLogger.logEvent('system_initialized', 'ComponentRegistry', 'main', {
+          action: 'registry_created'
+        });
+      }
+    }
+
+    /**
+     * Set the MetaLogger instance
+     * @param {MetaLogger} metaLogger - The MetaLogger instance
+     */
+    setMetaLogger(metaLogger) {
+      this.metaLogger = metaLogger;
+      if (metaLogger) {
+        metaLogger.logEvent('system_configured', 'ComponentRegistry', 'main', {
+          action: 'meta_logger_attached'
+        });
+      }
+    }
+
+    /**
+     * Get or create a type-specific registry
+     * @param {string} componentType - The type of component (e.g., 'KnowledgeGraphManager', 'IsomorphicPatternRecognizer')
+     * @returns {Map} The registry for this component type
+     */
+    getTypeRegistry(componentType) {
+      if (!this.registries.has(componentType)) {
+        this.registries.set(componentType, new Map());
+        
+        if (this.metaLogger) {
+          this.metaLogger.logEvent('registry_created', 'ComponentRegistry', componentType, {
+            action: 'type_registry_created',
+            componentType
+          });
+        }
+      }
+      return this.registries.get(componentType);
+    }
+
+    /**
+     * Get or create an instance of a specific component type
+     * @param {string} componentType - The type of component
+     * @param {string} id - The unique identifier for the instance
+     * @param {Function} constructorFn - The constructor function for the component
+     * @param {object} [options={}] - Options to pass to the constructor
+     * @returns {object} The component instance
+     */
+    getOrCreateInstance(componentType, id, constructorFn, options = {}) {
+      const typeRegistry = this.getTypeRegistry(componentType);
+      
+      if (!typeRegistry.has(id)) {
+        // console.log(`ComponentRegistry: Creating new ${componentType} instance with id "${id}"`);
+        const newInstance = new constructorFn({ ...options, id });
+        typeRegistry.set(id, newInstance);
+        
+        if (this.metaLogger) {
+          this.metaLogger.logEvent('component_created', componentType, id, {
+            action: 'instance_created',
+            options,
+            constructorName: constructorFn.name
+          });
+        }
+      } else {
+        if (this.metaLogger) {
+          this.metaLogger.logEvent('component_accessed', componentType, id, {
+            action: 'existing_instance_retrieved'
+          });
+        }
+      }
+      
+      return typeRegistry.get(id);
+    }
+
+    /**
+     * Get an existing instance
+     * @param {string} componentType - The type of component
+     * @param {string} id - The unique identifier for the instance
+     * @returns {object | undefined} The instance or undefined if not found
+     */
+    getInstance(componentType, id) {
+      const typeRegistry = this.getTypeRegistry(componentType);
+      const instance = typeRegistry.get(id);
+      
+      if (this.metaLogger) {
+        this.metaLogger.logEvent('component_accessed', componentType, id, {
+          action: 'instance_retrieved',
+          found: !!instance
+        });
+      }
+      
+      return instance;
+    }
+
+    /**
+     * Destroy an instance
+     * @param {string} componentType - The type of component
+     * @param {string} id - The unique identifier for the instance
+     * @returns {boolean} True if an instance was destroyed, false otherwise
+     */
+    destroyInstance(componentType, id) {
+      const typeRegistry = this.getTypeRegistry(componentType);
+      const existed = typeRegistry.has(id);
+      
+      if (existed) {
+        // console.log(`ComponentRegistry: Destroying ${componentType} instance with id "${id}"`);
+        typeRegistry.delete(id);
+        
+        if (this.metaLogger) {
+          this.metaLogger.logEvent('component_destroyed', componentType, id, {
+            action: 'instance_destroyed'
+          });
+        }
+      } else {
+        if (this.metaLogger) {
+          this.metaLogger.logEvent('component_destroy_failed', componentType, id, {
+            action: 'destroy_attempt_failed',
+            reason: 'instance_not_found'
+          });
+        }
+      }
+      
+      return existed;
+    }
+
+    /**
+     * List all instance IDs for a component type
+     * @param {string} componentType - The type of component
+     * @returns {string[]} An array of instance IDs
+     */
+    listInstanceIds(componentType) {
+      const typeRegistry = this.getTypeRegistry(componentType);
+      const ids = Array.from(typeRegistry.keys());
+      
+      if (this.metaLogger) {
+        this.metaLogger.logEvent('registry_queried', componentType, 'list_operation', {
+          action: 'list_instance_ids',
+          count: ids.length,
+          ids
+        });
+      }
+      
+      return ids;
+    }
+
+    /**
+     * Get summary of all managed components
+     * @returns {object} Summary object with counts by type
+     */
+    getSummary() {
+      const summary = {};
+      for (const [componentType, registry] of this.registries) {
+        summary[componentType] = registry.size;
+      }
+      
+      if (this.metaLogger) {
+        this.metaLogger.logEvent('registry_queried', 'ComponentRegistry', 'summary_operation', {
+          action: 'get_summary',
+          summary
+        });
+      }
+      
+      return summary;
+    }
+  }
+  // END MODIFIED: Enhanced ComponentRegistry class definition
+
   // Collaborative Framework Components
   class CollaborativeFramework {
     constructor() {
@@ -924,18 +1368,47 @@ const RecursiveResponseFramework = () => {
   };
   
   // Initialize systems
-  const [patternRecognizer] = useState(() => new IsomorphicPatternRecognizer());
-  // MODIFIED: Use useMemo and the registry to instantiate knowledgeGraphManager
+  // MODIFIED: Initialize MetaLogger and ComponentRegistry with logging integration
+  const metaLogger = useMemo(() => {
+    console.log("📝 MetaLogger: Creating new meta logger instance");
+    return new MetaLogger();
+  }, []);
+
+  const componentRegistry = useMemo(() => {
+    console.log("🔧 ComponentRegistry: Creating new component registry with MetaLogger");
+    const registry = new ComponentRegistry();
+    registry.setMetaLogger(metaLogger);
+    return registry;
+  }, [metaLogger]);
+
+  const patternRecognizer = useMemo(() => {
+    console.log("🔍 ComponentRegistry: Getting or creating 'mainPatternRecognizer' instance");
+    const instance = componentRegistry.getOrCreateInstance(
+      'IsomorphicPatternRecognizer', 
+      'mainPatternRecognizer', 
+      IsomorphicPatternRecognizer
+    );
+    console.log("🔍 ComponentRegistry: Pattern recognizer instances:", componentRegistry.listInstanceIds('IsomorphicPatternRecognizer'));
+    return instance;
+  }, [componentRegistry]);
+
+  const knowledgeGraphManager = useMemo(() => {
+    console.log("📊 ComponentRegistry: Getting or creating 'mainAriaGraph' instance");
+    const instance = componentRegistry.getOrCreateInstance(
+      'KnowledgeGraphManager', 
+      'mainAriaGraph', 
+      KnowledgeGraphManager
+    );
+    console.log("📊 ComponentRegistry: KnowledgeGraph instances:", componentRegistry.listInstanceIds('KnowledgeGraphManager'));
+    return instance;
+  }, [componentRegistry]);
+
+  // Keep legacy registry for backward compatibility (can be removed later)
   const registry = useMemo(() => {
-    console.log("🔧 KnowledgeGraphRegistry: Creating new registry instance");
+    console.log("🔧 KnowledgeGraphRegistry: Creating legacy registry instance");
     return new KnowledgeGraphRegistry();
   }, []);
-  const knowledgeGraphManager = useMemo(() => {
-    console.log("📊 KnowledgeGraphRegistry: Getting or creating 'mainAriaGraph' instance");
-    const instance = registry.getOrCreateInstance('mainAriaGraph');
-    console.log("📊 KnowledgeGraphRegistry: Current instances:", registry.listInstanceIds());
-    return instance;
-  }, [registry]);
+
   const [collaborationSystem] = useState(() => new CollaborativeFramework());
   const [bifurcationSystem] = useState(() => new BifurcationAnalysisSystem());
   const [selfModifyingSystem] = useState(() => new SelfModifyingArchitecture());
@@ -1471,6 +1944,18 @@ const RecursiveResponseFramework = () => {
     setActiveQuestion(0);
     setInteractionHistory([...interactionHistory, { type: 'layer_change', from: activeLayer, to: layer, timestamp: Date.now() }]);
     
+    // MODIFIED: Add MetaLogger tracking for user interactions
+    metaLogger.logEvent('interaction', 'UserInterface', 'layer_selector', {
+      action: 'layer_changed',
+      from: activeLayer,
+      to: layer,
+      timestamp: Date.now()
+    }, {
+      activeQuestion,
+      zoomLevel,
+      visualizationMode
+    });
+    
     // Add insight to log if educational mode is active
     if (educationalMode) {
       setInsightLog([
@@ -1491,6 +1976,18 @@ const RecursiveResponseFramework = () => {
     setZoomLevel(level);
     setInteractionHistory([...interactionHistory, { type: 'zoom_change', from: zoomLevel, to: level, timestamp: Date.now() }]);
     
+    // MODIFIED: Add MetaLogger tracking for zoom changes
+    metaLogger.logEvent('interaction', 'UserInterface', 'zoom_control', {
+      action: 'zoom_changed',
+      from: zoomLevel,
+      to: level,
+      timestamp: Date.now()
+    }, {
+      activeLayer,
+      activeQuestion,
+      visualizationMode
+    });
+    
     // Add insight to log if educational mode is active
     if (educationalMode) {
       setInsightLog([
@@ -1510,6 +2007,18 @@ const RecursiveResponseFramework = () => {
   const handleVisualizationChange = (mode) => {
     setVisualizationMode(mode);
     setInteractionHistory([...interactionHistory, { type: 'visualization_change', from: visualizationMode, to: mode, timestamp: Date.now() }]);
+    
+    // MODIFIED: Add MetaLogger tracking for visualization changes
+    metaLogger.logEvent('interaction', 'UserInterface', 'visualization_selector', {
+      action: 'visualization_changed',
+      from: visualizationMode,
+      to: mode,
+      timestamp: Date.now()
+    }, {
+      activeLayer,
+      activeQuestion,
+      zoomLevel
+    });
     
     // Add insight to log if educational mode is active
     if (educationalMode) {
@@ -1536,6 +2045,18 @@ const RecursiveResponseFramework = () => {
   const toggleInfo = () => {
     setShowInfo(!showInfo);
     
+    // MODIFIED: Add MetaLogger tracking for info toggle
+    metaLogger.logEvent('interaction', 'UserInterface', 'info_toggle', {
+      action: 'info_toggled',
+      newState: !showInfo,
+      timestamp: Date.now()
+    }, {
+      activeLayer,
+      activeQuestion,
+      zoomLevel,
+      visualizationMode
+    });
+    
     // Add insight to log if educational mode is active
     if (educationalMode) {
       setInsightLog([
@@ -1552,6 +2073,18 @@ const RecursiveResponseFramework = () => {
   // Toggle educational mode
   const toggleEducationalMode = () => {
     setEducationalMode(!educationalMode);
+    
+    // MODIFIED: Add MetaLogger tracking for educational mode toggle
+    metaLogger.logEvent('interaction', 'UserInterface', 'educational_mode_toggle', {
+      action: 'educational_mode_toggled',
+      newState: !educationalMode,
+      timestamp: Date.now()
+    }, {
+      activeLayer,
+      activeQuestion,
+      zoomLevel,
+      visualizationMode
+    });
     
     // If turning on educational mode, set initial learning level
     if (!educationalMode) {
@@ -2705,11 +3238,56 @@ const RecursiveResponseFramework = () => {
         <div className="mt-3 p-2 bg-gray-50 rounded border">
           <h4 className="text-xs font-medium text-gray-600 mb-1">🔧 Registry Debug Info</h4>
           <div className="text-xs text-gray-500">
-            <div>Active KnowledgeGraph Instances: {registry.listInstanceIds().join(', ') || 'None'}</div>
-            <div>Current Instance ID: mainAriaGraph</div>
-            <div>Instance Type: {knowledgeGraphManager.constructor.name}</div>
-            <div>Graph Nodes: {knowledgeGraphManager.getGraph().nodes.length}</div>
-            <div>Graph Edges: {knowledgeGraphManager.getGraph().edges.length}</div>
+            <div>Component Registry Summary: {JSON.stringify(componentRegistry.getSummary())}</div>
+            <div>KnowledgeGraph Instances: {componentRegistry.listInstanceIds('KnowledgeGraphManager').join(', ') || 'None'}</div>
+            <div>PatternRecognizer Instances: {componentRegistry.listInstanceIds('IsomorphicPatternRecognizer').join(', ') || 'None'}</div>
+            <div>Current KG Instance: mainAriaGraph (Nodes: {knowledgeGraphManager.getGraph().nodes.length}, Edges: {knowledgeGraphManager.getGraph().edges.length})</div>
+            <div>Current PR Instance: mainPatternRecognizer (Patterns: {patternRecognizer.getDetectedPatterns().length})</div>
+          </div>
+        </div>
+        
+        {/* NEW: MetaLogger Debug Information */}
+        <div className="mt-3 p-2 bg-blue-50 rounded border">
+          <h4 className="text-xs font-medium text-blue-600 mb-1">📝 MetaLogger Activity</h4>
+          <div className="text-xs text-blue-500 mb-2">
+            <div>Session ID: {metaLogger.sessionId}</div>
+            <div>Total Events: {metaLogger.getEvents().length}</div>
+            <div>Activity Summary: {JSON.stringify(metaLogger.getActivitySummary(300000))}</div>
+          </div>
+          
+          {/* Recent Events */}
+          <div className="mb-2">
+            <h5 className="text-xs font-medium text-blue-600 mb-1">Recent Events (Last 5):</h5>
+            <div className="max-h-20 overflow-y-auto text-xs text-blue-500">
+              {metaLogger.getEvents({ limit: 5 }).map((event, idx) => (
+                <div key={event.id} className="mb-1 pb-1 border-b border-blue-100">
+                  <span className="font-mono">[{new Date(event.timestamp).toLocaleTimeString()}]</span> 
+                  <span className="ml-1">{event.eventType}</span>
+                  {event.componentType && <span className="ml-1 text-blue-400">({event.componentType})</span>}
+                  {event.details.action && <span className="ml-1 italic">- {event.details.action}</span>}
+                </div>
+              ))}
+            </div>
+          </div>
+          
+          {/* System Insights */}
+          <div>
+            <h5 className="text-xs font-medium text-blue-600 mb-1">System Insights:</h5>
+            <div className="text-xs text-blue-500">
+              {metaLogger.generateInsights().length > 0 ? (
+                metaLogger.generateInsights().map((insight, idx) => (
+                  <div key={idx} className={`mb-1 p-1 rounded ${
+                    insight.severity === 'error' ? 'bg-red-100 text-red-600' :
+                    insight.severity === 'warning' ? 'bg-yellow-100 text-yellow-600' :
+                    'bg-green-100 text-green-600'
+                  }`}>
+                    <span className="font-medium">{insight.type}:</span> {insight.message}
+                  </div>
+                ))
+              ) : (
+                <div className="text-gray-400 italic">No insights generated yet</div>
+              )}
+            </div>
           </div>
         </div>
         
