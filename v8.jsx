@@ -1241,6 +1241,696 @@ const RecursiveResponseFramework = () => {
     }
   }
 
+  // NEW: BifurcationAnalysisSystem class implementation
+  class BifurcationAnalysisSystem {
+    constructor(options = {}) {
+      this.id = options.id || `bifurcation_${Date.now()}`;
+      this.parameterRanges = new Map();
+      this.stateSpace = new Map();
+      this.currentDynamics = null;
+      this.analysisHistory = [];
+      console.log(`BifurcationAnalysisSystem ${this.id} initialized`);
+    }
+
+    defineParameterRange(parameterName, minValue, maxValue, steps = 100) {
+      this.parameterRanges.set(parameterName, {
+        min: minValue,
+        max: maxValue,
+        steps,
+        stepSize: (maxValue - minValue) / steps
+      });
+      console.log(`BifurcationAnalysisSystem ${this.id}: Parameter range defined for ${parameterName}`);
+    }
+
+    calculateStateSpace() {
+      // Simplified state space calculation
+      for (const [paramName, range] of this.parameterRanges) {
+        const states = [];
+        for (let i = 0; i <= range.steps; i++) {
+          const value = range.min + (i * range.stepSize);
+          // Simplified bifurcation analysis - in reality this would be much more complex
+          const stability = Math.sin(value * Math.PI) * 0.5 + 0.5;
+          const complexity = Math.abs(Math.sin(value * 2 * Math.PI)) * 0.3 + 0.1;
+          
+          states.push({
+            value,
+            stability,
+            complexity,
+            bifurcationPoint: stability < 0.3 || stability > 0.9
+          });
+        }
+        this.stateSpace.set(paramName, states);
+      }
+      console.log(`BifurcationAnalysisSystem ${this.id}: State space calculated for ${this.parameterRanges.size} parameters`);
+    }
+
+    analyzeCurrentDynamics(currentParams = {}) {
+      const analysis = {
+        timestamp: Date.now(),
+        parameters: currentParams,
+        stability: 0.7 + Math.random() * 0.2, // Simplified
+        complexity: 0.4 + Math.random() * 0.3,
+        insightPotential: 0.5 + Math.random() * 0.4,
+        dynamicsDescription: this.generateDynamicsDescription(currentParams)
+      };
+
+      this.currentDynamics = analysis;
+      this.analysisHistory.push(analysis);
+
+      // Keep history manageable
+      if (this.analysisHistory.length > 100) {
+        this.analysisHistory = this.analysisHistory.slice(-100);
+      }
+
+      return analysis;
+    }
+
+    generateDynamicsDescription(params) {
+      const descriptions = [
+        "System operating in stable attractor basin with moderate complexity",
+        "Approaching bifurcation point - small changes may create large effects",
+        "High complexity region detected - rich pattern formation potential",
+        "Edge of chaos dynamics - optimal for creative insight generation",
+        "Stable periodic behavior with predictable pattern evolution"
+      ];
+      
+      return descriptions[Math.floor(Math.random() * descriptions.length)];
+    }
+
+    getBifurcationPoints(parameterName) {
+      const states = this.stateSpace.get(parameterName);
+      return states ? states.filter(state => state.bifurcationPoint) : [];
+    }
+  }
+
+  // NEW: SelfModifyingArchitecture class implementation
+  class SelfModifyingArchitecture {
+    constructor(options = {}) {
+      this.id = options.id || `selfmod_${Date.now()}`;
+      this.parameterHistory = [];
+      this.adaptationRules = new Map();
+      this.metaParameters = {
+        adaptationRate: 0.1,
+        stabilityThreshold: 0.8,
+        explorationRate: 0.05,
+        lastUpdate: Date.now()
+      };
+      this.maxHistoryLength = 1000;
+      console.log(`SelfModifyingArchitecture ${this.id} initialized`);
+    }
+
+    initializeParameterTracking(initialParams) {
+      this.parameterHistory.push({
+        timestamp: Date.now(),
+        parameters: { ...initialParams },
+        source: 'initialization'
+      });
+      console.log(`SelfModifyingArchitecture ${this.id}: Parameter tracking initialized`);
+    }
+
+    defineAdaptationRule(ruleName, targetParameter, conditionFn, adaptationFn) {
+      this.adaptationRules.set(ruleName, {
+        targetParameter,
+        conditionFn,
+        adaptationFn,
+        activationCount: 0,
+        lastActivated: null
+      });
+      console.log(`SelfModifyingArchitecture ${this.id}: Adaptation rule '${ruleName}' defined`);
+    }
+
+    updateParameterHistory(newParams) {
+      this.parameterHistory.push({
+        timestamp: Date.now(),
+        parameters: { ...newParams },
+        source: 'update'
+      });
+
+      // Maintain history size
+      if (this.parameterHistory.length > this.maxHistoryLength) {
+        this.parameterHistory = this.parameterHistory.slice(-this.maxHistoryLength);
+      }
+    }
+
+    applyAdaptationRules(currentParams) {
+      let adaptedParams = { ...currentParams };
+      const appliedRules = [];
+
+      for (const [ruleName, rule] of this.adaptationRules) {
+        try {
+          if (rule.conditionFn(this.parameterHistory, currentParams)) {
+            const adjustment = rule.adaptationFn(this.parameterHistory, currentParams, this.metaParameters);
+            
+            if (adaptedParams[rule.targetParameter] !== undefined) {
+              adaptedParams[rule.targetParameter] = Math.max(0, Math.min(1, 
+                adaptedParams[rule.targetParameter] + adjustment
+              ));
+              
+              rule.activationCount++;
+              rule.lastActivated = Date.now();
+              appliedRules.push(ruleName);
+            }
+          }
+        } catch (error) {
+          console.warn(`SelfModifyingArchitecture ${this.id}: Error applying rule '${ruleName}':`, error);
+        }
+      }
+
+      if (appliedRules.length > 0) {
+        console.log(`SelfModifyingArchitecture ${this.id}: Applied rules: ${appliedRules.join(', ')}`);
+        this.updateParameterHistory(adaptedParams);
+      }
+
+      return adaptedParams;
+    }
+
+    updateMetaParameters(currentParams) {
+      // Simple meta-parameter adaptation
+      const recentHistory = this.parameterHistory.slice(-10);
+      
+      if (recentHistory.length > 5) {
+        // Calculate parameter variance to adjust adaptation rate
+        const variance = this.calculateParameterVariance(recentHistory);
+        
+        if (variance > 0.1) {
+          this.metaParameters.adaptationRate = Math.max(0.01, this.metaParameters.adaptationRate * 0.9);
+        } else if (variance < 0.02) {
+          this.metaParameters.adaptationRate = Math.min(0.2, this.metaParameters.adaptationRate * 1.1);
+        }
+      }
+
+      this.metaParameters.lastUpdate = Date.now();
+    }
+
+    calculateParameterVariance(history) {
+      if (history.length < 2) return 0;
+      
+      const paramNames = Object.keys(history[0].parameters);
+      let totalVariance = 0;
+      
+      paramNames.forEach(paramName => {
+        const values = history.map(h => h.parameters[paramName]).filter(v => typeof v === 'number');
+        if (values.length > 1) {
+          const mean = values.reduce((sum, val) => sum + val, 0) / values.length;
+          const variance = values.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / values.length;
+          totalVariance += variance;
+        }
+      });
+      
+      return totalVariance / paramNames.length;
+    }
+
+    generateMetaCommentary() {
+      const recentRules = Array.from(this.adaptationRules.entries())
+        .filter(([_, rule]) => rule.lastActivated && (Date.now() - rule.lastActivated) < 60000)
+        .map(([name, _]) => name);
+
+      if (recentRules.length > 0) {
+        return `Self-modification active: ${recentRules.join(', ')} rules applied. Adaptation rate: ${this.metaParameters.adaptationRate.toFixed(3)}`;
+      } else {
+        return `System stable. Monitoring for adaptation opportunities. Current adaptation rate: ${this.metaParameters.adaptationRate.toFixed(3)}`;
+      }
+    }
+  }
+
+  // NEW: EnvironmentalContextSystem class implementation
+  class EnvironmentalContextSystem {
+    constructor(options = {}) {
+      this.id = options.id || `envcontext_${Date.now()}`;
+      this.currentContext = {};
+      this.rhythmPatterns = new Map();
+      this.adaptationProfiles = new Map();
+      this.contextHistory = [];
+      this.cognitiveLoadHistory = [];
+      console.log(`EnvironmentalContextSystem ${this.id} initialized`);
+    }
+
+    updateContext() {
+      const now = new Date();
+      const timeOfDay = {
+        hour: now.getHours(),
+        phase: this.getTimePhase(now.getHours()),
+        dayOfWeek: now.getDay(),
+        isWeekend: now.getDay() === 0 || now.getDay() === 6
+      };
+
+      this.currentContext = {
+        timestamp: Date.now(),
+        timeOfDay,
+        sessionDuration: this.calculateSessionDuration(),
+        environmentalFactors: this.detectEnvironmentalFactors()
+      };
+
+      this.contextHistory.push(this.currentContext);
+      if (this.contextHistory.length > 100) {
+        this.contextHistory = this.contextHistory.slice(-100);
+      }
+    }
+
+    getTimePhase(hour) {
+      if (hour >= 6 && hour < 12) return 'morning';
+      if (hour >= 12 && hour < 17) return 'afternoon';
+      if (hour >= 17 && hour < 21) return 'evening';
+      return 'night';
+    }
+
+    calculateSessionDuration() {
+      // Simplified session duration calculation
+      return Date.now() - (this.contextHistory[0]?.timestamp || Date.now());
+    }
+
+    detectEnvironmentalFactors() {
+      // Simplified environmental factor detection
+      return {
+        estimatedCognitiveLoad: 0.3 + Math.random() * 0.4,
+        interactionIntensity: 0.2 + Math.random() * 0.6,
+        focusStability: 0.4 + Math.random() * 0.4
+      };
+    }
+
+    defineRhythmPattern(patternName, period, oscillationFn) {
+      this.rhythmPatterns.set(patternName, {
+        period,
+        oscillationFn,
+        lastApplied: null
+      });
+      console.log(`EnvironmentalContextSystem ${this.id}: Rhythm pattern '${patternName}' defined`);
+    }
+
+    defineAdaptationProfile(profileName, conditionFn, adaptations) {
+      this.adaptationProfiles.set(profileName, {
+        conditionFn,
+        adaptations,
+        activationCount: 0,
+        lastActivated: null
+      });
+      console.log(`EnvironmentalContextSystem ${this.id}: Adaptation profile '${profileName}' defined`);
+    }
+
+    applyContextualAdaptations(baseParams) {
+      let adaptedParams = { ...baseParams };
+      const appliedProfiles = [];
+
+      for (const [profileName, profile] of this.adaptationProfiles) {
+        try {
+          if (profile.conditionFn(this.currentContext)) {
+            Object.assign(adaptedParams, profile.adaptations);
+            profile.activationCount++;
+            profile.lastActivated = Date.now();
+            appliedProfiles.push(profileName);
+          }
+        } catch (error) {
+          console.warn(`EnvironmentalContextSystem ${this.id}: Error applying profile '${profileName}':`, error);
+        }
+      }
+
+      if (appliedProfiles.length > 0) {
+        console.log(`EnvironmentalContextSystem ${this.id}: Applied profiles: ${appliedProfiles.join(', ')}`);
+      }
+
+      return adaptedParams;
+    }
+
+    applyRhythmicVariations(baseParams) {
+      let adaptedParams = { ...baseParams };
+
+      for (const [patternName, pattern] of this.rhythmPatterns) {
+        try {
+          const currentTime = Date.now();
+          const phase = (currentTime % pattern.period) / pattern.period;
+          const oscillation = pattern.oscillationFn(phase, this.currentContext);
+          
+          // Apply oscillation to relevant parameters (simplified)
+          if (patternName.includes('attention')) {
+            adaptedParams.attentionalEfficiency = Math.max(0.1, Math.min(1.0, 
+              adaptedParams.attentionalEfficiency + oscillation
+            ));
+          }
+          
+          pattern.lastApplied = currentTime;
+        } catch (error) {
+          console.warn(`EnvironmentalContextSystem ${this.id}: Error applying rhythm '${patternName}':`, error);
+        }
+      }
+
+      return adaptedParams;
+    }
+
+    updateCognitiveLoad(systemMetrics, interactionHistory) {
+      const cognitiveLoad = {
+        timestamp: Date.now(),
+        attentionalDemand: systemMetrics.attentionalEfficiency || 0.5,
+        processingComplexity: systemMetrics.recursiveDepth / 5 || 0.4,
+        interactionFrequency: Math.min(1.0, interactionHistory.length / 100),
+        overallLoad: 0
+      };
+
+      cognitiveLoad.overallLoad = (
+        cognitiveLoad.attentionalDemand * 0.4 +
+        cognitiveLoad.processingComplexity * 0.3 +
+        cognitiveLoad.interactionFrequency * 0.3
+      );
+
+      this.cognitiveLoadHistory.push(cognitiveLoad);
+      if (this.cognitiveLoadHistory.length > 50) {
+        this.cognitiveLoadHistory = this.cognitiveLoadHistory.slice(-50);
+      }
+    }
+
+    getContextSummary() {
+      return {
+        currentPhase: this.currentContext.timeOfDay?.phase || 'unknown',
+        sessionDuration: this.currentContext.sessionDuration || 0,
+        activeProfiles: Array.from(this.adaptationProfiles.entries())
+          .filter(([_, profile]) => profile.lastActivated && (Date.now() - profile.lastActivated) < 300000)
+          .map(([name, _]) => name),
+        cognitiveLoad: this.cognitiveLoadHistory.length > 0 ? 
+          this.cognitiveLoadHistory[this.cognitiveLoadHistory.length - 1].overallLoad : 0
+      };
+    }
+  }
+
+  // NEW: MetaGovernanceSystem class for holistic system management
+  class MetaGovernanceSystem {
+    constructor(componentRegistry, metaLogger, options = {}) {
+      this.id = options.id || `metagov_${Date.now()}`;
+      this.componentRegistry = componentRegistry;
+      this.metaLogger = metaLogger;
+      this.metaRules = new Map();
+      this.systemHealthMetrics = {};
+      this.governanceHistory = [];
+      this.interventionThresholds = {
+        resourceLeakWarning: 10,
+        errorClusterThreshold: 5,
+        performanceDegradationThreshold: 0.3,
+        componentInteractionLimit: 100
+      };
+      this.autoGovernanceEnabled = true;
+      console.log(`MetaGovernanceSystem ${this.id} initialized`);
+      
+      if (this.metaLogger) {
+        this.metaLogger.logEvent('system_initialized', 'MetaGovernanceSystem', this.id, {
+          action: 'governance_system_created',
+          autoGovernanceEnabled: this.autoGovernanceEnabled
+        });
+      }
+    }
+
+    /**
+     * Define a meta-rule for component interaction governance
+     * @param {string} ruleName - Name of the rule
+     * @param {Function} conditionFn - Function that returns true when rule should be applied
+     * @param {Function} actionFn - Function that executes the governance action
+     * @param {object} options - Rule options (priority, enabled, etc.)
+     */
+    defineMetaRule(ruleName, conditionFn, actionFn, options = {}) {
+      const rule = {
+        name: ruleName,
+        conditionFn,
+        actionFn,
+        priority: options.priority || 1,
+        enabled: options.enabled !== false,
+        activationCount: 0,
+        lastActivated: null,
+        description: options.description || `Meta-rule: ${ruleName}`,
+        category: options.category || 'general'
+      };
+
+      this.metaRules.set(ruleName, rule);
+      
+      if (this.metaLogger) {
+        this.metaLogger.logEvent('meta_rule_defined', 'MetaGovernanceSystem', ruleName, {
+          action: 'rule_created',
+          category: rule.category,
+          priority: rule.priority,
+          enabled: rule.enabled
+        });
+      }
+
+      console.log(`MetaGovernanceSystem ${this.id}: Meta-rule '${ruleName}' defined`);
+    }
+
+    /**
+     * Evaluate and apply meta-rules based on current system state
+     * @param {object} systemState - Current state of all system components
+     * @returns {Array} Applied interventions
+     */
+    evaluateMetaRules(systemState) {
+      const appliedInterventions = [];
+      
+      // Sort rules by priority (higher priority first)
+      const sortedRules = Array.from(this.metaRules.values())
+        .filter(rule => rule.enabled)
+        .sort((a, b) => b.priority - a.priority);
+
+      for (const rule of sortedRules) {
+        try {
+          if (rule.conditionFn(systemState, this.systemHealthMetrics, this.metaLogger)) {
+            const intervention = rule.actionFn(systemState, this.componentRegistry, this.metaLogger);
+            
+            if (intervention) {
+              appliedInterventions.push({
+                ruleName: rule.name,
+                intervention,
+                timestamp: Date.now(),
+                systemState: { ...systemState }
+              });
+
+              rule.activationCount++;
+              rule.lastActivated = Date.now();
+
+              if (this.metaLogger) {
+                this.metaLogger.logEvent('meta_rule_applied', 'MetaGovernanceSystem', rule.name, {
+                  action: 'rule_intervention',
+                  intervention,
+                  activationCount: rule.activationCount
+                });
+              }
+            }
+          }
+        } catch (error) {
+          console.warn(`MetaGovernanceSystem ${this.id}: Error evaluating rule '${rule.name}':`, error);
+          
+          if (this.metaLogger) {
+            this.metaLogger.logEvent('error', 'MetaGovernanceSystem', rule.name, {
+              action: 'rule_evaluation_error',
+              error: error.message
+            });
+          }
+        }
+      }
+
+      if (appliedInterventions.length > 0) {
+        this.governanceHistory.push({
+          timestamp: Date.now(),
+          interventions: appliedInterventions,
+          systemState: { ...systemState }
+        });
+
+        // Maintain history size
+        if (this.governanceHistory.length > 100) {
+          this.governanceHistory = this.governanceHistory.slice(-100);
+        }
+      }
+
+      return appliedInterventions;
+    }
+
+    /**
+     * Monitor system health across all components
+     * @returns {object} System health assessment
+     */
+    assessSystemHealth() {
+      const componentSummary = this.componentRegistry.getSummary();
+      const recentEvents = this.metaLogger.getEvents({ limit: 100 });
+      const activitySummary = this.metaLogger.getActivitySummary(300000); // Last 5 minutes
+
+      // Calculate health metrics
+      const healthMetrics = {
+        timestamp: Date.now(),
+        componentHealth: this.assessComponentHealth(componentSummary),
+        interactionHealth: this.assessInteractionHealth(recentEvents),
+        performanceHealth: this.assessPerformanceHealth(activitySummary),
+        resourceHealth: this.assessResourceHealth(recentEvents),
+        overallHealth: 0
+      };
+
+      // Calculate overall health score (0-1)
+      healthMetrics.overallHealth = (
+        healthMetrics.componentHealth * 0.3 +
+        healthMetrics.interactionHealth * 0.25 +
+        healthMetrics.performanceHealth * 0.25 +
+        healthMetrics.resourceHealth * 0.2
+      );
+
+      this.systemHealthMetrics = healthMetrics;
+
+      if (this.metaLogger) {
+        this.metaLogger.logEvent('system_health_assessed', 'MetaGovernanceSystem', this.id, {
+          action: 'health_assessment',
+          overallHealth: healthMetrics.overallHealth,
+          metrics: healthMetrics
+        });
+      }
+
+      return healthMetrics;
+    }
+
+    assessComponentHealth(componentSummary) {
+      // Simple component health assessment
+      const totalComponents = Object.values(componentSummary).reduce((sum, count) => sum + count, 0);
+      
+      if (totalComponents === 0) return 0;
+      if (totalComponents > 20) return 0.5; // Too many components might indicate issues
+      
+      return Math.min(1.0, totalComponents / 10); // Optimal around 5-10 components
+    }
+
+    assessInteractionHealth(recentEvents) {
+      const interactionEvents = recentEvents.filter(e => e.eventType === 'interaction');
+      const errorEvents = recentEvents.filter(e => e.eventType === 'error');
+      
+      if (interactionEvents.length === 0) return 0.5; // No interactions
+      
+      const errorRate = errorEvents.length / interactionEvents.length;
+      return Math.max(0, 1 - (errorRate * 2)); // Penalize high error rates
+    }
+
+    assessPerformanceHealth(activitySummary) {
+      // Simple performance assessment based on event frequency
+      const eventsPerMinute = activitySummary.totalEvents / (activitySummary.timeWindow / 60000);
+      
+      if (eventsPerMinute < 1) return 0.7; // Low activity
+      if (eventsPerMinute > 50) return 0.4; // Very high activity might indicate issues
+      
+      return Math.min(1.0, eventsPerMinute / 10); // Optimal around 5-10 events per minute
+    }
+
+    assessResourceHealth(recentEvents) {
+      const creationEvents = recentEvents.filter(e => e.eventType === 'component_created');
+      const destructionEvents = recentEvents.filter(e => e.eventType === 'component_destroyed');
+      
+      if (creationEvents.length === 0) return 1.0; // No resource usage
+      
+      const resourceBalance = destructionEvents.length / creationEvents.length;
+      return Math.min(1.0, resourceBalance + 0.5); // Prefer balanced creation/destruction
+    }
+
+    /**
+     * Initialize default meta-rules for system governance
+     */
+    initializeDefaultMetaRules() {
+      // Rule 1: Resource leak prevention
+      this.defineMetaRule(
+        'prevent_resource_leaks',
+        (systemState, healthMetrics, metaLogger) => {
+          const recentEvents = metaLogger.getEvents({ limit: 50 });
+          const creations = recentEvents.filter(e => e.eventType === 'component_created').length;
+          const destructions = recentEvents.filter(e => e.eventType === 'component_destroyed').length;
+          return creations > destructions + this.interventionThresholds.resourceLeakWarning;
+        },
+        (systemState, componentRegistry, metaLogger) => {
+          // Log warning and suggest cleanup
+          metaLogger.logEvent('governance_intervention', 'MetaGovernanceSystem', 'resource_leak_prevention', {
+            action: 'resource_leak_warning',
+            recommendation: 'Consider destroying unused component instances'
+          });
+          return { type: 'warning', message: 'Potential resource leak detected' };
+        },
+        { priority: 3, category: 'resource_management', description: 'Prevents resource leaks by monitoring component creation/destruction ratios' }
+      );
+
+      // Rule 2: Error cluster response
+      this.defineMetaRule(
+        'handle_error_clusters',
+        (systemState, healthMetrics, metaLogger) => {
+          const recentErrors = metaLogger.getEvents({ eventType: 'error', limit: 20 });
+          return recentErrors.length >= this.interventionThresholds.errorClusterThreshold;
+        },
+        (systemState, componentRegistry, metaLogger) => {
+          metaLogger.logEvent('governance_intervention', 'MetaGovernanceSystem', 'error_cluster_response', {
+            action: 'error_cluster_detected',
+            recommendation: 'System stability may be compromised'
+          });
+          return { type: 'alert', message: 'Error cluster detected - system stability at risk' };
+        },
+        { priority: 5, category: 'error_handling', description: 'Responds to clusters of errors that may indicate system instability' }
+      );
+
+      // Rule 3: Performance optimization
+      this.defineMetaRule(
+        'optimize_performance',
+        (systemState, healthMetrics, metaLogger) => {
+          return healthMetrics.performanceHealth < this.interventionThresholds.performanceDegradationThreshold;
+        },
+        (systemState, componentRegistry, metaLogger) => {
+          metaLogger.logEvent('governance_intervention', 'MetaGovernanceSystem', 'performance_optimization', {
+            action: 'performance_degradation_detected',
+            recommendation: 'Consider reducing system complexity or optimizing component interactions'
+          });
+          return { type: 'optimization', message: 'Performance degradation detected - optimization recommended' };
+        },
+        { priority: 2, category: 'performance', description: 'Monitors and responds to performance degradation' }
+      );
+
+      // Rule 4: Component interaction limits
+      this.defineMetaRule(
+        'limit_component_interactions',
+        (systemState, healthMetrics, metaLogger) => {
+          const recentInteractions = metaLogger.getEvents({ eventType: 'component_accessed', limit: 200 });
+          return recentInteractions.length > this.interventionThresholds.componentInteractionLimit;
+        },
+        (systemState, componentRegistry, metaLogger) => {
+          metaLogger.logEvent('governance_intervention', 'MetaGovernanceSystem', 'interaction_limiting', {
+            action: 'high_interaction_frequency',
+            recommendation: 'Consider caching or reducing component access frequency'
+          });
+          return { type: 'throttling', message: 'High component interaction frequency - consider optimization' };
+        },
+        { priority: 1, category: 'interaction_management', description: 'Prevents excessive component interactions that could degrade performance' }
+      );
+
+      console.log(`MetaGovernanceSystem ${this.id}: Default meta-rules initialized`);
+    }
+
+    /**
+     * Get governance summary and recommendations
+     * @returns {object} Governance summary
+     */
+    getGovernanceSummary() {
+      const activeRules = Array.from(this.metaRules.values()).filter(rule => rule.enabled);
+      const recentInterventions = this.governanceHistory.slice(-10);
+
+      return {
+        systemId: this.id,
+        totalRules: this.metaRules.size,
+        activeRules: activeRules.length,
+        recentInterventions: recentInterventions.length,
+        lastHealthAssessment: this.systemHealthMetrics.timestamp || null,
+        overallSystemHealth: this.systemHealthMetrics.overallHealth || 0,
+        autoGovernanceEnabled: this.autoGovernanceEnabled,
+        ruleCategories: [...new Set(activeRules.map(rule => rule.category))]
+      };
+    }
+
+    /**
+     * Enable or disable automatic governance
+     * @param {boolean} enabled - Whether to enable auto-governance
+     */
+    setAutoGovernance(enabled) {
+      this.autoGovernanceEnabled = enabled;
+      
+      if (this.metaLogger) {
+        this.metaLogger.logEvent('system_configured', 'MetaGovernanceSystem', this.id, {
+          action: 'auto_governance_toggled',
+          enabled
+        });
+      }
+      
+      console.log(`MetaGovernanceSystem ${this.id}: Auto-governance ${enabled ? 'enabled' : 'disabled'}`);
+    }
+  }
+
   // Educational scaffolding content
   const educationalContent = {
     tutorials: {
@@ -1403,16 +2093,56 @@ const RecursiveResponseFramework = () => {
     return instance;
   }, [componentRegistry]);
 
+  const collaborationSystem = useMemo(() => {
+    console.log("🤝 ComponentRegistry: Getting or creating 'mainCollaborationSystem' instance");
+    const instance = componentRegistry.getOrCreateInstance(
+      'CollaborativeFramework', 
+      'mainCollaborationSystem', 
+      CollaborativeFramework
+    );
+    console.log("🤝 ComponentRegistry: CollaborativeFramework instances:", componentRegistry.listInstanceIds('CollaborativeFramework'));
+    return instance;
+  }, [componentRegistry]);
+
   // Keep legacy registry for backward compatibility (can be removed later)
   const registry = useMemo(() => {
     console.log("🔧 KnowledgeGraphRegistry: Creating legacy registry instance");
     return new KnowledgeGraphRegistry();
   }, []);
 
-  const [collaborationSystem] = useState(() => new CollaborativeFramework());
-  const [bifurcationSystem] = useState(() => new BifurcationAnalysisSystem());
-  const [selfModifyingSystem] = useState(() => new SelfModifyingArchitecture());
-  const [environmentalSystem] = useState(() => new EnvironmentalContextSystem());
+  // MODIFIED: Use ComponentRegistry for all system components
+  const bifurcationSystem = useMemo(() => {
+    console.log("📈 ComponentRegistry: Getting or creating 'mainBifurcationSystem' instance");
+    const instance = componentRegistry.getOrCreateInstance(
+      'BifurcationAnalysisSystem', 
+      'mainBifurcationSystem', 
+      BifurcationAnalysisSystem
+    );
+    console.log("📈 ComponentRegistry: BifurcationAnalysisSystem instances:", componentRegistry.listInstanceIds('BifurcationAnalysisSystem'));
+    return instance;
+  }, [componentRegistry]);
+
+  const selfModifyingSystem = useMemo(() => {
+    console.log("🔄 ComponentRegistry: Getting or creating 'mainSelfModifyingSystem' instance");
+    const instance = componentRegistry.getOrCreateInstance(
+      'SelfModifyingArchitecture', 
+      'mainSelfModifyingSystem', 
+      SelfModifyingArchitecture
+    );
+    console.log("🔄 ComponentRegistry: SelfModifyingArchitecture instances:", componentRegistry.listInstanceIds('SelfModifyingArchitecture'));
+    return instance;
+  }, [componentRegistry]);
+
+  const environmentalSystem = useMemo(() => {
+    console.log("🌍 ComponentRegistry: Getting or creating 'mainEnvironmentalSystem' instance");
+    const instance = componentRegistry.getOrCreateInstance(
+      'EnvironmentalContextSystem', 
+      'mainEnvironmentalSystem', 
+      EnvironmentalContextSystem
+    );
+    console.log("🌍 ComponentRegistry: EnvironmentalContextSystem instances:", componentRegistry.listInstanceIds('EnvironmentalContextSystem'));
+    return instance;
+  }, [componentRegistry]);
   
   // Initialize on mount
   useEffect(() => {
