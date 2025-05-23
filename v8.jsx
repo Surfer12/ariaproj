@@ -2143,6 +2143,22 @@ const RecursiveResponseFramework = () => {
     console.log("🌍 ComponentRegistry: EnvironmentalContextSystem instances:", componentRegistry.listInstanceIds('EnvironmentalContextSystem'));
     return instance;
   }, [componentRegistry]);
+
+  const metaGovernanceSystem = useMemo(() => {
+    console.log("🏛️ ComponentRegistry: Getting or creating 'mainMetaGovernanceSystem' instance");
+    const instance = componentRegistry.getOrCreateInstance(
+      'MetaGovernanceSystem', 
+      'mainMetaGovernanceSystem', 
+      MetaGovernanceSystem,
+      { componentRegistry, metaLogger } // Pass required dependencies
+    );
+    console.log("🏛️ ComponentRegistry: MetaGovernanceSystem instances:", componentRegistry.listInstanceIds('MetaGovernanceSystem'));
+    
+    // Initialize default meta-rules
+    instance.initializeDefaultMetaRules();
+    
+    return instance;
+  }, [componentRegistry, metaLogger]);
   
   // Initialize on mount
   useEffect(() => {
@@ -2228,6 +2244,33 @@ const RecursiveResponseFramework = () => {
         
         // Generate meta-commentary
         const commentary = selfModifyingSystem.generateMetaCommentary();
+        
+        // MODIFIED: Add MetaGovernanceSystem integration
+        // Assess system health and apply meta-rules
+        const systemHealth = metaGovernanceSystem.assessSystemHealth();
+        const systemState = {
+          metrics: adaptedParams,
+          health: systemHealth,
+          componentSummary: componentRegistry.getSummary(),
+          timestamp: Date.now()
+        };
+        
+        // Apply meta-governance rules if auto-governance is enabled
+        if (metaGovernanceSystem.autoGovernanceEnabled) {
+          const interventions = metaGovernanceSystem.evaluateMetaRules(systemState);
+          
+          if (interventions.length > 0) {
+            // Log governance interventions
+            setInsightLog(prev => [
+              ...prev,
+              ...interventions.map(intervention => ({
+                type: 'governance_intervention',
+                message: `Meta-governance: ${intervention.intervention.message}`,
+                timestamp: intervention.timestamp
+              }))
+            ]);
+          }
+        }
         
         // Only update state if significant changes occurred
         if (JSON.stringify(adaptedParams) !== JSON.stringify(systemMetrics)) {
