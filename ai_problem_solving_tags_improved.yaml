@@ -1,0 +1,546 @@
+# AI Problem-Solving System Tag Definitions - Improved Version
+# Dynamic tag system for an AI to facilitate complex problem-solving
+# Version: 2.0 - Incorporates improvements from analysis
+
+# System-wide configuration
+system_config:
+  version: "2.0"
+  description: "Hybrid AI system combining symbolic reasoning and neural heuristics for interpretable problem-solving"
+  global_error_handling:
+    - type: "graceful_degradation"
+      description: "Falls back to simpler methods when advanced methods fail"
+    - type: "timeout_protection"
+      description: "Enforces time limits on all computations"
+    - type: "resource_monitoring"
+      description: "Tracks and limits memory/CPU usage"
+
+tags:
+  - name: SymbolicModule
+    description: Leverages formal logic tools (e.g., SAT/SMT solvers, theorem provers) for precise, rule-based inference on discrete logic problems. Takes formally encoded problems and attempts exhaustive logical reasoning to ensure rigorous correctness and soundness within its logic domain.
+    attributes:
+      - name: logic_domain
+        type: string
+        description: Specifies the type of formal logic it operates on (e.g., "propositional", "first-order", "SMT").
+        default_value: "first-order"
+      - name: completeness_guarantee
+        type: boolean
+        description: Indicates if the module guarantees finding a solution if one exists within its domain.
+        default_value: true
+      - name: timeout_seconds
+        type: integer
+        description: Maximum time allowed for symbolic reasoning before timeout.
+        default_value: 300
+      - name: solver_backend
+        type: string
+        description: Specific solver implementation to use (e.g., "Z3", "CVC5", "Vampire").
+        default_value: "Z3"
+    input_schema:
+      type: object
+      properties:
+        problem_encoding:
+          type: string
+          description: "Formally encoded problem in logic domain syntax"
+        constraints:
+          type: array
+          description: "Additional constraints to apply"
+        heuristic_guidance:
+          type: object
+          description: "Optional guidance from neural module"
+    output_schema:
+      type: object
+      properties:
+        result:
+          type: string
+          enum: ["proved", "disproved", "unknown", "timeout"]
+        proof_trace:
+          type: array
+          description: "Step-by-step proof or counterexample"
+        confidence:
+          type: number
+          description: "Confidence in the result (0.0-1.0)"
+    failure_modes:
+      - "timeout"
+      - "resource_exhaustion"
+      - "no_proof_found"
+      - "invalid_encoding"
+    analogy: A rigorous, rule-bound judge or a master chess player who systematically explores all legal moves to find a winning path or prove no such path exists.
+    recursion_trigger: N/A
+    recursion_depth_limit: N/A
+    inter_tag_relationships:
+      - type: "feeds_into"
+        target: "HybridBlendingMechanism"
+        description: Provides `S(x)` (symbolic result) to the blending mechanism.
+      - type: "receives_heuristic_guidance_from"
+        target: "NeuralModule"
+        description: Can receive heuristic guidance from the neural module for focused search (e.g., pruning search space, prioritizing branches).
+      - type: "verified_by"
+        target: "ValidationBenchmark"
+        description: Its proofs or counterexamples are checked by validation processes.
+
+  - name: NeuralModule
+    description: Employs advanced neural networks (e.g., GNNs, Transformers) to provide intuitive, pattern-based predictions and heuristic guidance. Processes input patterns and generates likelihood estimates for various solution paths, excelling at navigating large search spaces and suggesting likely steps.
+    attributes:
+      - name: network_architecture
+        type: string
+        description: The type of neural network used (e.g., "GNN", "Transformer").
+        default_value: "Transformer"
+      - name: training_data_source
+        type: string
+        description: Describes the source of data used for training (e.g., "known bug patterns", "proof datasets").
+        default_value: "mixed_proof_datasets"
+      - name: confidence_score
+        type: float
+        range: [0.0, 1.0]
+        description: A measure of the neural module's certainty in its prediction.
+        default_value: 0.5
+      - name: model_version
+        type: string
+        description: Version identifier for the trained model.
+        default_value: "v1.0"
+    input_schema:
+      type: object
+      properties:
+        problem_representation:
+          type: object
+          description: "Neural-friendly encoding of the problem"
+        context_window:
+          type: array
+          description: "Recent reasoning steps for context"
+    output_schema:
+      type: object
+      properties:
+        predictions:
+          type: array
+          description: "Ranked list of likely next steps or solutions"
+        heuristic_values:
+          type: object
+          description: "Heuristic scores for different branches"
+        confidence:
+          type: number
+          range: [0.0, 1.0]
+    failure_modes:
+      - "low_confidence"
+      - "out_of_distribution_input"
+      - "incorrect_prediction"
+      - "model_loading_error"
+    analogy: A skilled intuitive detective or a grandmaster chess player who quickly recognizes patterns and suggests promising moves based on experience, even if they can't formally prove every step.
+    recursion_trigger: N/A
+    recursion_depth_limit: N/A
+    inter_tag_relationships:
+      - type: "feeds_into"
+        target: "HybridBlendingMechanism"
+        description: Provides `N(x)` (neural prediction) to the blending mechanism.
+      - type: "provides_heuristic_guidance_to"
+        target: "SymbolicModule"
+        description: Offers heuristic guidance to the symbolic module through search space pruning and branch prioritization.
+      - type: "refined_by"
+        target: "MetaOptimizationController"
+        description: Its performance and parameters are optimized by the meta-optimizer.
+
+  - name: HybridBlendingMechanism
+    description: Merges outputs from the Symbolic Reasoning Module and Neural Heuristic Module using a tunable coefficient α to balance strict logical rigor and flexible heuristic guidance. Implements sophisticated arbitration logic to select or combine results optimally.
+    attributes:
+      - name: alpha_coefficient
+        type: float
+        range: [0.0, 1.0]
+        description: Tunable parameter (α) controlling the blend ratio between symbolic (α) and neural (1-α) outputs.
+        default_value: 0.5
+      - name: blending_method
+        type: string
+        enum: ["weighted_sum", "probabilistic_selection", "arbitration_logic", "proof_of_work"]
+        description: How outputs are combined.
+        default_value: "arbitration_logic"
+      - name: conflict_resolution_strategy
+        type: string
+        description: How to handle conflicting outputs from modules.
+        default_value: "confidence_weighted"
+    input_schema:
+      type: object
+      properties:
+        symbolic_output:
+          type: object
+          description: "Output from SymbolicModule"
+        neural_output:
+          type: object
+          description: "Output from NeuralModule"
+        blending_parameters:
+          type: object
+          description: "Current alpha and method settings"
+    output_schema:
+      type: object
+      properties:
+        blended_result:
+          type: object
+          description: "Combined output incorporating both symbolic and neural insights"
+        module_contributions:
+          type: object
+          description: "Breakdown of how each module contributed to the result"
+        confidence:
+          type: number
+          range: [0.0, 1.0]
+    analogy: A skilled conductor balancing an orchestra, bringing out the strengths of different sections (logic and intuition) to create a harmonious and powerful performance.
+    recursion_trigger: N/A
+    recursion_depth_limit: N/A
+    inter_tag_relationships:
+      - type: "receives_from"
+        target: ["SymbolicModule", "NeuralModule"]
+        description: Takes outputs from both modules.
+      - type: "outputs_to"
+        target: ["BayesianRegularizationEngine", "CognitiveBiasModeler", "ExplanationGenerator"]
+        description: Provides the blended result for further processing and explanation.
+      - type: "controlled_by"
+        target: "MetaOptimizationController"
+        description: Its `alpha_coefficient` is tuned by the meta-optimizer.
+      - type: "user_controlled_via"
+        target: "InteractiveControlInterface"
+        description: Users can adjust `alpha_coefficient` via the interface.
+
+  - name: BayesianRegularizationEngine
+    description: Applies regularizers (λ₁, λ₂) for cognitive alignment (human-like simplicity) and computational efficiency (minimal steps/resource usage) to the system's reasoning. Transforms reasoning traces to be more interpretable and efficient.
+    attributes:
+      - name: lambda1_cognitive_weight
+        type: float
+        range: [0.0, 10.0]
+        description: Weight (λ₁) for the cognitive regularizer, penalizing overly complex or counterintuitive explanations.
+        default_value: 1.0
+      - name: lambda2_efficiency_weight
+        type: float
+        range: [0.0, 10.0]
+        description: Weight (λ₂) for the efficiency regularizer, encouraging minimal computational steps or resource usage.
+        default_value: 0.5
+      - name: cognitive_measure_method
+        type: string
+        enum: ["comparison_to_human_patterns", "inference_depth_penalty", "simplicity_score"]
+        description: How cognitive plausibility is measured.
+        default_value: "inference_depth_penalty"
+      - name: efficiency_measure_method
+        type: string
+        enum: ["step_count", "computation_time", "resource_usage"]
+        description: How efficiency is measured.
+        default_value: "step_count"
+    input_schema:
+      type: object
+      properties:
+        reasoning_trace:
+          type: array
+          description: "Sequence of reasoning steps to regularize"
+        optimization_targets:
+          type: object
+          description: "Specific aspects to optimize for"
+    output_schema:
+      type: object
+      properties:
+        regularized_trace:
+          type: array
+          description: "Optimized reasoning trace"
+        regularization_metrics:
+          type: object
+          description: "Metrics showing improvement in cognitive alignment and efficiency"
+    analogy: A meticulous editor or proofreader who ensures a complex argument is not only correct but also clear, concise, and easy to follow.
+    recursion_trigger: N/A
+    recursion_depth_limit: N/A
+    inter_tag_relationships:
+      - type: "receives_from"
+        target: "HybridBlendingMechanism"
+        description: Applies regularization to the blended output/reasoning trace.
+      - type: "outputs_to"
+        target: "CognitiveBiasModeler"
+        description: Provides regularized output for bias modeling.
+      - type: "controlled_by"
+        target: "MetaOptimizationController"
+        description: Its `lambda` weights are tuned by the meta-optimizer.
+      - type: "user_controlled_via"
+        target: "InteractiveControlInterface"
+        description: Users can adjust `lambda` weights via the interface.
+
+  - name: CognitiveBiasModeler
+    description: Incorporates a bias parameter (β) to intentionally simulate certain human reasoning heuristics, making the AI's reasoning process more relatable and interpretable. Applies transformations that reflect common human cognitive patterns.
+    attributes:
+      - name: beta_bias_parameter
+        type: float
+        range: [0.0, 1.0]
+        description: Parameter (β) controlling the magnitude of applied human cognitive biases.
+        default_value: 0.3
+      - name: bias_types
+        type: array
+        items:
+          type: string
+          enum: ["availability_heuristic", "confirmation_bias", "occams_razor", "anchoring_bias", "pattern_recognition_bias"]
+        description: Types of biases that can be simulated.
+        default_value: ["occams_razor", "pattern_recognition_bias"]
+      - name: application_method
+        type: string
+        enum: ["reorder_steps", "filter_steps", "annotate_decisions", "hybrid_approach"]
+        description: How biases are applied.
+        default_value: "hybrid_approach"
+    input_schema:
+      type: object
+      properties:
+        regularized_trace:
+          type: array
+          description: "Regularized reasoning trace from BayesianRegularizationEngine"
+        bias_parameters:
+          type: object
+          description: "Configuration for which biases to apply and how strongly"
+    output_schema:
+      type: object
+      properties:
+        biased_trace:
+          type: array
+          description: "Reasoning trace with human-like biases applied"
+        bias_annotations:
+          type: array
+          description: "Annotations explaining which biases influenced which steps"
+    analogy: A skilled storyteller who can present a complex chain of events in a way that feels natural and intuitive, even if it highlights common human tendencies or shortcuts.
+    recursion_trigger: N/A
+    recursion_depth_limit: N/A
+    inter_tag_relationships:
+      - type: "receives_from"
+        target: "BayesianRegularizationEngine"
+        description: Applies biases to the already regularized reasoning trace.
+      - type: "outputs_to"
+        target: "ExplanationGenerator"
+        description: Provides the bias-influenced output/trace for explanation.
+      - type: "controlled_by"
+        target: "MetaOptimizationController"
+        description: Its `beta_bias_parameter` is tuned by the meta-optimizer.
+      - type: "user_controlled_via"
+        target: "InteractiveControlInterface"
+        description: Users can adjust `beta_bias_parameter` via the interface.
+
+  - name: MetaOptimizationController
+    description: Oversees automatic fine-tuning of system parameters (α, λ₁, λ₂, β) based on performance, using meta-learning techniques. Implements safe optimization with explicit termination conditions and manual override options for user agency.
+    attributes:
+      - name: optimization_strategy
+        type: string
+        enum: ["grid_search", "bayesian_optimization", "reinforcement_learning", "evolutionary_algorithm"]
+        description: Method used for parameter tuning.
+        default_value: "bayesian_optimization"
+      - name: monitored_metrics
+        type: array
+        items:
+          type: string
+        description: Performance metrics tracked for optimization.
+        default_value: ["accuracy", "efficiency", "user_satisfaction", "explanation_quality"]
+      - name: user_override_capability
+        type: boolean
+        description: Indicates if users can manually set or constrain parameters.
+        default_value: true
+      - name: max_iterations
+        type: integer
+        description: Maximum number of optimization iterations before termination.
+        default_value: 100
+      - name: convergence_threshold
+        type: float
+        description: Improvement threshold below which optimization stops.
+        default_value: 0.001
+      - name: no_improvement_patience
+        type: integer
+        description: Number of iterations without improvement before stopping.
+        default_value: 10
+    termination_conditions:
+      - condition: "max_iterations_reached"
+        description: "Stops after reaching maximum iteration count"
+      - condition: "convergence_achieved"
+        description: "Stops when improvement falls below threshold"
+      - condition: "no_improvement"
+        description: "Stops after patience iterations without improvement"
+      - condition: "user_interrupt"
+        description: "Stops when user manually interrupts"
+      - condition: "resource_limit"
+        description: "Stops when computational resources are exhausted"
+    analogy: A skilled coach or a constantly learning strategist who adjusts team tactics (parameters) based on game performance (metrics) to achieve optimal results, while allowing the captain (user) to make final calls.
+    recursion_trigger: "feedback_loop_optimization"
+    recursion_depth_limit: 
+      type: "bounded"
+      max_depth: 100
+      termination_policy: "first_applicable_condition"
+    inter_tag_relationships:
+      - type: "optimizes"
+        target: ["HybridBlendingMechanism", "BayesianRegularizationEngine", "CognitiveBiasModeler"]
+        description: Adjusts parameters (α, λ₁, λ₂, β) of these modules.
+      - type: "receives_feedback_from"
+        target: "ValidationBenchmark"
+        description: Uses performance data from validation to inform optimization.
+      - type: "influenced_by"
+        target: "InteractiveControlInterface"
+        description: Respects user-set parameter overrides.
+
+  - name: ExplanationGenerator
+    description: Compiles the final output including the answer/verification result and a step-by-step explanation. Transforms reasoning traces into human-readable narratives, annotating steps with natural language descriptions, highlighting module origins and bias influences.
+    attributes:
+      - name: detail_level
+        type: string
+        enum: ["summary", "detailed", "deep_dive", "custom"]
+        description: User-configurable level of detail for explanations.
+        default_value: "detailed"
+      - name: annotation_types
+        type: array
+        items:
+          type: string
+        description: Types of annotations provided.
+        default_value: ["module_origin", "bias_influence", "confidence_level", "alternative_paths"]
+      - name: output_format
+        type: string
+        enum: ["natural_language", "visual_proof_trace", "interactive_dialogue", "structured_json"]
+        description: Format of the explanation.
+        default_value: "natural_language"
+      - name: language_style
+        type: string
+        description: Writing style for explanations (e.g., "technical", "conversational", "educational").
+        default_value: "educational"
+    input_schema:
+      type: object
+      properties:
+        final_result:
+          type: object
+          description: "The final answer or verification result"
+        complete_trace:
+          type: array
+          description: "Full reasoning trace from all modules"
+        module_metadata:
+          type: object
+          description: "Metadata about which modules contributed what"
+    output_schema:
+      type: object
+      properties:
+        explanation:
+          type: string
+          description: "Human-readable explanation"
+        structured_steps:
+          type: array
+          description: "Step-by-step breakdown with annotations"
+        confidence_report:
+          type: object
+          description: "Confidence levels and uncertainty analysis"
+        visualization_data:
+          type: object
+          description: "Data for visual representation if requested"
+    analogy: A skilled teacher or a forensic investigator who clearly reconstructs a complex process, explaining each step and its origin in an understandable way.
+    recursion_trigger: N/A
+    recursion_depth_limit: N/A
+    inter_tag_relationships:
+      - type: "receives_from"
+        target: ["HybridBlendingMechanism", "CognitiveBiasModeler", "SymbolicModule", "NeuralModule"]
+        description: Gathers information from various stages and modules to construct the explanation.
+      - type: "outputs_to_user_via"
+        target: "InteractiveControlInterface"
+        description: Presents explanations through the user interface.
+
+  - name: InteractiveControlInterface
+    description: Provides a user-friendly interface with interactive controls (sliders, knobs, toggles) for parameters (α, β, λ) and visualization of reasoning steps. Enables real-time experimentation and fosters user agency in the reasoning process.
+    attributes:
+      - name: adjustable_parameters
+        type: array
+        items:
+          type: object
+          properties:
+            parameter_name:
+              type: string
+            min_value:
+              type: number
+            max_value:
+              type: number
+            step_size:
+              type: number
+        description: List of parameters users can directly adjust with their constraints.
+        default_value:
+          - parameter_name: "alpha"
+            min_value: 0.0
+            max_value: 1.0
+            step_size: 0.05
+          - parameter_name: "beta"
+            min_value: 0.0
+            max_value: 1.0
+            step_size: 0.05
+          - parameter_name: "lambda1"
+            min_value: 0.0
+            max_value: 10.0
+            step_size: 0.1
+          - parameter_name: "lambda2"
+            min_value: 0.0
+            max_value: 10.0
+            step_size: 0.1
+      - name: visualization_types
+        type: array
+        items:
+          type: string
+        description: Types of visual feedback provided.
+        default_value: ["proof_trace", "timeline", "parameter_effects", "confidence_heatmap"]
+      - name: interaction_modes
+        type: array
+        items:
+          type: string
+        description: Ways users can interact.
+        default_value: ["parameter_adjustment", "step_inspection", "rerun_with_changes", "save_configuration"]
+    analogy: The cockpit of a highly intuitive aircraft, where a pilot (user) can easily adjust flight parameters (system behavior) and see real-time feedback on complex processes.
+    recursion_trigger: N/A
+    recursion_depth_limit: N/A
+    inter_tag_relationships:
+      - type: "controls"
+        target: ["HybridBlendingMechanism", "BayesianRegularizationEngine", "CognitiveBiasModeler", "MetaOptimizationController"]
+        description: Allows users to directly adjust parameters.
+      - type: "receives_from"
+        target: "ExplanationGenerator"
+        description: Displays the explanations and visual traces generated.
+      - type: "feeds_feedback_to"
+        target: "ValidationBenchmark"
+        description: Captures user ratings and feedback.
+
+  - name: ValidationBenchmark
+    description: Conducts rigorous validation of the hybrid system against baseline methods using empirical benchmarking, robustness checks, and user feedback loops. Ensures effectiveness, reliability, and safety of the reasoning system.
+    attributes:
+      - name: benchmark_metrics
+        type: array
+        items:
+          type: object
+          properties:
+            metric_name:
+              type: string
+            measurement_method:
+              type: string
+            threshold:
+              type: number
+        description: Key metrics used for empirical evaluation with their measurement methods and acceptable thresholds.
+        default_value:
+          - metric_name: "accuracy"
+            measurement_method: "correct_answers_ratio"
+            threshold: 0.95
+          - metric_name: "efficiency"
+            measurement_method: "average_computation_time"
+            threshold: 10.0
+          - metric_name: "explanation_quality"
+            measurement_method: "user_comprehension_score"
+            threshold: 0.8
+      - name: safety_check_methods
+        type: array
+        items:
+          type: string
+        description: Methods for ensuring robustness and safety.
+        default_value: ["formal_proof_verification", "adversarial_testing", "edge_case_analysis", "consistency_checking"]
+      - name: feedback_mechanisms
+        type: array
+        items:
+          type: string
+        description: Ways user feedback is collected.
+        default_value: ["likert_ratings", "error_flagging", "suggestion_box", "A/B_testing"]
+    error_handling_strategies:
+      - strategy: "validation_failure_recovery"
+        description: "Provides detailed diagnostics when validation fails"
+      - strategy: "incremental_validation"
+        description: "Validates components individually before system-wide validation"
+      - strategy: "regression_detection"
+        description: "Detects performance degradation compared to previous versions"
+    analogy: A quality assurance department or a meticulous scientist who rigorously tests a product or hypothesis, gathers data, and provides feedback for continuous improvement.
+    recursion_trigger: N/A
+    recursion_depth_limit: N/A
+    inter_tag_relationships:
+      - type: "evaluates"
+        target: ["SymbolicModule", "NeuralModule", "HybridBlendingMechanism", "CognitiveBiasModeler", "ExplanationGenerator"]
+        description: Assesses the performance and output quality of system components.
+      - type: "feeds_feedback_to"
+        target: "MetaOptimizationController"
+        description: Provides performance data to the meta-optimizer for tuning.
+      - type: "receives_from"
+        target: "InteractiveControlInterface"
+        description: Gathers direct user feedback from the interface.
